@@ -10,6 +10,7 @@ import os
 import logging
 # Import salt libs
 import salt.utils
+from salt.exceptions import CommandExecutionError
 
 log = logging.getLogger(__name__)
 
@@ -43,8 +44,15 @@ def _phab_config_exec(command, bin=None):
 
 
 def list_options(**kwargs):
-    return __salt__['cmd.run'](_phab_config_exec('list',
-                                                 bin=kwargs.get('bin', None)))
+    phab_cmd = _phab_config_exec('list', bin=kwargs.get('bin', None))
+
+    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+    if cmd_ret['retcode'] == 0:
+        return cmd_ret['stdout']
+    else:
+        raise CommandExecutionError('Error in command "%s" : %s' % (
+            phab_cmd,
+            str(cmd_ret)))
 
 
 def get_option(name, **kwargs):
@@ -55,16 +63,18 @@ def get_option(name, **kwargs):
 
     # config get <option_name> returns json if it success
     cmd_ret = __salt__['cmd.run_all'](phab_cmd)
-    log.debug(cmd_ret)
+    option_values = {}
     if cmd_ret['retcode'] == 0:
         try:
             option_values = salt.utils.serializers.json.deserialize(
                 cmd_ret['stdout'])
         except:
-            log.error('Unable to parse JSON from command %s' % (phab_cmd,))
-            option_values = {}
+            raise CommandExecutionError(
+                'Error while parsing JSON : %s' % (cmd_ret['stdout'],))
     else:
-        option_values = {}
+        raise CommandExecutionError('Error in command "%s" : %s' % (
+            phab_cmd,
+            str(cmd_ret)))
 
     option_value = None
     if len(option_values) > 0 and 'config' in option_values:
@@ -90,7 +100,13 @@ def set_option(name, value, **kwargs):
     if name is not None and len(name.strip()) > 0:
         phab_cmd = '%s %s "%s"' % (phab_cmd, name, value)
 
-    return __salt__['cmd.run'](phab_cmd)
+    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+    if cmd_ret['retcode'] == 0:
+        return cmd_ret['stdout']
+    else:
+        raise CommandExecutionError('Error in command "%s" : %s' % (
+            phab_cmd,
+            str(cmd_ret)))
 
 
 def delete_option(name, **kwargs):
@@ -99,7 +115,13 @@ def delete_option(name, **kwargs):
     if name is not None and len(name.strip()) > 0:
         phab_cmd = '%s %s' % (phab_cmd, name)
 
-    return __salt__['cmd.run'](phab_cmd)
+    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+    if cmd_ret['retcode'] == 0:
+        return cmd_ret['stdout']
+    else:
+        raise CommandExecutionError('Error in command "%s" : %s' % (
+            phab_cmd,
+            str(cmd_ret)))
 
 
 if __name__ == "__main__":
