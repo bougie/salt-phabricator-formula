@@ -54,25 +54,32 @@ def get_option(name, **kwargs):
         phab_cmd = '%s %s' % (phab_cmd, name)
 
     # config get <option_name> returns json if it success
-    cmd_json = __salt__['cmd.run'](phab_cmd)
-    try:
-        option_values = salt.utils.serializers.json.deserialize(cmd_json)
-    except:
-        log.error('Unable to parse JSON from command %s' % (phab_cmd,))
+    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+    log.debug(cmd_ret)
+    if cmd_ret['retcode'] == 0:
+        try:
+            option_values = salt.utils.serializers.json.deserialize(
+                cmd_ret['stdout'])
+        except:
+            log.error('Unable to parse JSON from command %s' % (phab_cmd,))
+            option_values = {}
+    else:
+        option_values = {}
 
     option_value = None
-    # option_values['config'] contains a local and a database option
-    # local option value has priority over database one
-    for scope in ['local', 'database']:
-        if option_value is None:
-            for t_option in option_values['config']:
-                if (t_option['source'] == scope
-                        and t_option['key'] == name
-                        and t_option['status'] == 'set'):
-                    option_value = t_option['value']
-                    break
-        else:
-            break
+    if len(option_values) > 0 and 'config' in option_values:
+        # option_values['config'] contains a local and a database option
+        # local option value has priority over database one
+        for scope in ['local', 'database']:
+            if option_value is None:
+                for t_option in option_values['config']:
+                    if (t_option['source'] == scope
+                            and t_option['key'] == name
+                            and t_option['status'] == 'set'):
+                        option_value = t_option['value']
+                        break
+            else:
+                break
 
     return option_value
 
