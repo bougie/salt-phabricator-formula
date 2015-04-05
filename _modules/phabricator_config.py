@@ -10,7 +10,7 @@ import os
 import logging
 # Import salt libs
 import salt.utils
-from salt.exceptions import CommandExecutionError
+from salt.exceptions import CommandExecutionError, SaltInvocationError
 
 log = logging.getLogger(__name__)
 
@@ -72,12 +72,10 @@ def get_option(name, **kwargs):
             raise CommandExecutionError(
                 'Error while parsing JSON : %s' % (cmd_ret['stdout'],))
     else:
-        raise CommandExecutionError('Error in command "%s" : %s' % (
-            phab_cmd,
-            str(cmd_ret)))
+        raise SaltInvocationError('Option %s does not exist' % (name,))
 
     option_value = None
-    if len(option_values) > 0 and 'config' in option_values:
+    if isinstance(option_values, dict) and 'config' in option_values:
         # option_values['config'] contains a local and a database option
         # local option value has priority over database one
         for scope in ['local', 'database']:
@@ -110,18 +108,21 @@ def set_option(name, value, **kwargs):
 
 
 def delete_option(name, **kwargs):
-    phab_cmd = _phab_config_exec('delete', bin=kwargs.get('bin', None))
+    if get_option(name) is not None:
+        phab_cmd = _phab_config_exec('delete', bin=kwargs.get('bin', None))
 
-    if name is not None and len(name.strip()) > 0:
-        phab_cmd = '%s %s' % (phab_cmd, name)
+        if name is not None and len(name.strip()) > 0:
+            phab_cmd = '%s %s' % (phab_cmd, name)
 
-    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
-    if cmd_ret['retcode'] == 0:
-        return cmd_ret['stdout']
+        cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+        if cmd_ret['retcode'] == 0:
+            return cmd_ret['stdout']
+        else:
+            raise CommandExecutionError('Error in command "%s" : %s' % (
+                phab_cmd,
+                str(cmd_ret)))
     else:
-        raise CommandExecutionError('Error in command "%s" : %s' % (
-            phab_cmd,
-            str(cmd_ret)))
+        return 'option %s is not set' % (name,)
 
 
 if __name__ == "__main__":
