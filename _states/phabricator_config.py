@@ -2,6 +2,10 @@
 '''
 Support for phabricator configuration
 '''
+from __future__ import absolute_import
+
+import logging
+log = logging.getLogger(__name__)
 
 
 def managed(name, value, **kwargs):
@@ -37,6 +41,39 @@ def managed(name, value, **kwargs):
                 ret['result'] = None
             else:
                 ret['result'] = True
+
+    return ret
+
+
+def absent(name, **kwargs):
+    ret = {'name': name,
+           'changes': {},
+           'comment': '',
+           'result': False}
+
+    try:
+        curr_value = __salt__['phabricator_config.get_option'](name)
+    except:
+        if __opts__['test']:
+            ret['result'] = None
+            ret['comment'] = 'option %s seems do not exist' % (name,)
+        else:
+            ret['result'] = False
+            ret['comment'] = 'option %s does not exist' % (name,)
+    else:
+        if not __opts__['test']:
+            if curr_value is not None:
+                try:
+                    __salt__['phabricator_config.delete_option'](name)
+                except:
+                    ret['result'] = False
+                else:
+                    ret['result'] = True
+                    ret['changes'] = {'old': curr_value, 'new': None}
+            else:
+                ret['result'] = True
+        else:
+            ret['result'] = None
 
     return ret
 
