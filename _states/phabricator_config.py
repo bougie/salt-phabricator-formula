@@ -10,23 +10,33 @@ def managed(name, value, **kwargs):
            'comment': '',
            'result': False}
 
-    old_value = __salt__['phabricator_config.get_option'](name)
-
-    if value != old_value:
-        if not __opts__['test']:
-            __salt__['phabricator_config.set_option'](name, value)
-            ret['result'] = True
-        else:
-            ret['result'] = None
-
-        ret['changes'] = {'new': value, 'old': old_value}
-        ret['comment'] = 'New value was set for option %s' % (name,)
-    else:
-        ret['comment'] = 'The option %s has the right value' % (name,)
+    try:
+        old_value = __salt__['phabricator_config.get_option'](name)
+    except:
         if __opts__['test']:
             ret['result'] = None
+            ret['comment'] = 'option %s seems do not exist' % (name,)
         else:
-            ret['result'] = True
+            ret['result'] = False
+            ret['comment'] = 'option %s does not exist' % (name,)
+    else:
+        if value != old_value:
+            ret['changes'] = {'new': value, 'old': old_value}
+
+            if not __opts__['test']:
+                try:
+                    __salt__['phabricator_config.set_option'](name, value)
+                except:
+                    ret['result'] = False
+                else:
+                    ret['result'] = True
+            else:
+                ret['result'] = None
+        else:
+            if __opts__['test']:
+                ret['result'] = None
+            else:
+                ret['result'] = True
 
     return ret
 
