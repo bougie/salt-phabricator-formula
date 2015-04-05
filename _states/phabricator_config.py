@@ -3,6 +3,7 @@
 Support for phabricator configuration
 '''
 
+
 def managed(name, value, **kwargs):
     ret = {'name': name,
            'changes': {},
@@ -22,7 +23,10 @@ def managed(name, value, **kwargs):
         ret['comment'] = 'New value was set for option %s' % (name,)
     else:
         ret['comment'] = 'The option %s has the right value' % (name,)
-        ret['result'] = True
+        if __opts__['test']:
+            ret['result'] = None
+        else:
+            ret['result'] = True
 
     return ret
 
