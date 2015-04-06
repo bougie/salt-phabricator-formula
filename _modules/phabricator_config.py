@@ -15,6 +15,7 @@ from salt.exceptions import CommandExecutionError, SaltInvocationError
 log = logging.getLogger(__name__)
 
 __virtualname__ = 'phabricator_config'
+available_options = None
 
 
 def __virtual__():
@@ -48,15 +49,20 @@ def _option_exists(name, **kwargs):
 
 
 def list_options(**kwargs):
-    phab_cmd = _phab_config_exec('list', bin=kwargs.get('bin', None))
+    global available_options
 
-    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
-    if cmd_ret['retcode'] == 0:
-        return cmd_ret['stdout']
-    else:
-        raise CommandExecutionError('Error in command "%s" : %s' % (
-            phab_cmd,
-            str(cmd_ret)))
+    if available_options is None or kwargs.get('force', False):
+        phab_cmd = _phab_config_exec('list', bin=kwargs.get('bin', None))
+
+        cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+        if cmd_ret['retcode'] == 0:
+            available_options = cmd_ret['stdout']
+        else:
+            raise CommandExecutionError('Error in command "%s" : %s' % (
+                phab_cmd,
+                str(cmd_ret)))
+
+    return available_options
 
 
 def get_option(name, **kwargs):
