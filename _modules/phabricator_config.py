@@ -29,10 +29,16 @@ def __virtual__():
 
 
 def _bin_dir():
+    '''
+    Return the path to the root dir of phabricator install dir
+    '''
     return __salt__['config.get']('phabricator:root_dir')
 
 
 def _phab_config_exec(command, bin=None):
+    '''
+    Return the path to the config binary
+    '''
     if bin is not None:
         if os.path.isfile(bin):
             phab_bin = bin
@@ -45,10 +51,24 @@ def _phab_config_exec(command, bin=None):
 
 
 def _option_exists(name, **kwargs):
+    '''
+    Check if a given option name is in the all options list
+    '''
     return name in list_options(**kwargs).split('\n')
 
 
 def list_options(**kwargs):
+    '''
+    List all configuration options
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' phabricator_config.list_options
+        salt '*' phabricator_config.list_options bin=/path/to/config/bin
+        salt '*' phabricator_config.list_options bin=/path/to/root/dir
+    '''
     global available_options
 
     if available_options is None or kwargs.get('force', False):
@@ -66,6 +86,19 @@ def list_options(**kwargs):
 
 
 def get_option(name, **kwargs):
+    '''
+    Get value for a given option name
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' phabricator_config.get_option <option_name>
+        salt '*' phabricator_config.get_option <option_name>
+        bin=/path/to/config/bin
+        salt '*' phabricator_config.get_option <option_name>
+        bin=/path/to/root/dir
+    '''
     phab_cmd = _phab_config_exec('get', bin=kwargs.get('bin', None))
 
     if name is not None and len(name.strip()) > 0:
@@ -108,6 +141,19 @@ def get_option(name, **kwargs):
 
 
 def set_option(name, value, **kwargs):
+    '''
+    Set value for a given option name
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' phabricator_config.set_option <option_name> <option_value>
+        salt '*' phabricator_config.set_option <option_name> <option_value>
+        bin=/path/to/config/bin
+        salt '*' phabricator_config.get_option <option_name> <option_value>
+        bin=/path/to/root/dir
+    '''
     phab_cmd = _phab_config_exec('set', bin=kwargs.get('bin', None))
 
     if name is not None and len(name.strip()) > 0:
@@ -126,6 +172,19 @@ def set_option(name, value, **kwargs):
 
 
 def delete_option(name, **kwargs):
+    '''
+    Delete/Reset value for a given option name
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' phabricator_config.delete_option <option_name>
+        salt '*' phabricator_config.delete_option <option_name>
+        bin=/path/to/config/bin
+        salt '*' phabricator_config.delete_option <option_name>
+        bin=/path/to/root/dir
+    '''
     if (_option_exists(name, **kwargs)
             and get_option(name, **kwargs) is not None):
         phab_cmd = _phab_config_exec('delete', bin=kwargs.get('bin', None))
