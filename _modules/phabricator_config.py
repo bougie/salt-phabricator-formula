@@ -43,6 +43,10 @@ def _phab_config_exec(command, bin=None):
     return '%s %s' % (phab_bin, command)
 
 
+def _option_exists(name, **kwargs):
+    return name in list_options(**kwargs).split('\n')
+
+
 def list_options(**kwargs):
     phab_cmd = _phab_config_exec('list', bin=kwargs.get('bin', None))
 
@@ -61,16 +65,21 @@ def get_option(name, **kwargs):
     if name is not None and len(name.strip()) > 0:
         phab_cmd = '%s %s' % (phab_cmd, name)
 
-    # config get <option_name> returns json if it success
-    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
-    option_values = {}
-    if cmd_ret['retcode'] == 0:
-        try:
-            option_values = salt.utils.serializers.json.deserialize(
-                cmd_ret['stdout'])
-        except:
-            raise CommandExecutionError(
-                'Error while parsing JSON : %s' % (cmd_ret['stdout'],))
+    if _option_exists(name, **kwargs):
+        # config get <option_name> returns json if it success
+        cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+        option_values = {}
+        if cmd_ret['retcode'] == 0:
+            try:
+                option_values = salt.utils.serializers.json.deserialize(
+                    cmd_ret['stdout'])
+            except:
+                raise CommandExecutionError(
+                    'Error while parsing JSON : %s' % (cmd_ret['stdout'],))
+        else:
+            raise CommandExecutionError('Error in command "%s" : %s' % (
+                phab_cmd,
+                str(cmd_ret)))
     else:
         raise SaltInvocationError('Option %s does not exist' % (name,))
 
@@ -98,17 +107,21 @@ def set_option(name, value, **kwargs):
     if name is not None and len(name.strip()) > 0:
         phab_cmd = '%s %s "%s"' % (phab_cmd, name, value)
 
-    cmd_ret = __salt__['cmd.run_all'](phab_cmd)
-    if cmd_ret['retcode'] == 0:
-        return cmd_ret['stdout']
+    if _option_exists(name, **kwargs):
+        cmd_ret = __salt__['cmd.run_all'](phab_cmd)
+        if cmd_ret['retcode'] == 0:
+            return cmd_ret['stdout']
+        else:
+            raise CommandExecutionError('Error in command "%s" : %s' % (
+                phab_cmd,
+                str(cmd_ret)))
     else:
-        raise CommandExecutionError('Error in command "%s" : %s' % (
-            phab_cmd,
-            str(cmd_ret)))
+        raise SaltInvocationError('Option %s does not exist' % (name,))
 
 
 def delete_option(name, **kwargs):
-    if get_option(name, **kwargs) is not None:
+    if (_option_exists(name, **kwargs)
+            and get_option(name, **kwargs) is not None):
         phab_cmd = _phab_config_exec('delete', bin=kwargs.get('bin', None))
 
         if name is not None and len(name.strip()) > 0:
