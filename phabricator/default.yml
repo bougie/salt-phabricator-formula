@@ -1,0 +1,8 @@
+{% load_yaml as lookup %}
+FreeBSD:
+    git_package: git
+{% endload %}
+
+{% load_yaml as rawmap %}
+root_dir: /srv/www/phabricator
+{% endload %}
