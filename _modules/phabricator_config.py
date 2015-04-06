@@ -28,7 +28,7 @@ def __virtual__():
 
 
 def _bin_dir():
-    return __salt__['config.get']('phabricator:bin_dir')
+    return __salt__['config.get']('phabricator:root_dir')
 
 
 def _phab_config_exec(command, bin=None):
@@ -36,9 +36,9 @@ def _phab_config_exec(command, bin=None):
         if os.path.isfile(bin):
             phab_bin = bin
         else:
-            phab_bin = os.path.join(bin, 'config')
+            phab_bin = os.path.join(bin, 'phabricator', 'bin', 'config')
     else:
-        phab_bin = os.path.join(_bin_dir(), 'config')
+        phab_bin = os.path.join(_bin_dir(), 'phabricator', 'bin', 'config')
 
     return '%s %s' % (phab_bin, command)
 
@@ -108,7 +108,7 @@ def set_option(name, value, **kwargs):
 
 
 def delete_option(name, **kwargs):
-    if get_option(name) is not None:
+    if get_option(name, **kwargs) is not None:
         phab_cmd = _phab_config_exec('delete', bin=kwargs.get('bin', None))
 
         if name is not None and len(name.strip()) > 0:
