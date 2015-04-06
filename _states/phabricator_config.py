@@ -31,7 +31,7 @@ def managed(name, value, **kwargs):
                 try:
                     __salt__['phabricator_config.set_option'](name,
                                                               value,
-                                                              **kargs)
+                                                              **kwargs)
                 except:
                     ret['result'] = False
                 else:
