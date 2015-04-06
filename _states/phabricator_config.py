@@ -15,7 +15,7 @@ def managed(name, value, **kwargs):
            'result': False}
 
     try:
-        old_value = __salt__['phabricator_config.get_option'](name)
+        old_value = __salt__['phabricator_config.get_option'](name, **kwargs)
     except:
         if __opts__['test']:
             ret['result'] = None
@@ -29,7 +29,9 @@ def managed(name, value, **kwargs):
 
             if not __opts__['test']:
                 try:
-                    __salt__['phabricator_config.set_option'](name, value)
+                    __salt__['phabricator_config.set_option'](name,
+                                                              value,
+                                                              **kargs)
                 except:
                     ret['result'] = False
                 else:
@@ -52,7 +54,7 @@ def absent(name, **kwargs):
            'result': False}
 
     try:
-        curr_value = __salt__['phabricator_config.get_option'](name)
+        curr_value = __salt__['phabricator_config.get_option'](name, **kwargs)
     except:
         if __opts__['test']:
             ret['result'] = None
@@ -64,7 +66,7 @@ def absent(name, **kwargs):
         if not __opts__['test']:
             if curr_value is not None:
                 try:
-                    __salt__['phabricator_config.delete_option'](name)
+                    __salt__['phabricator_config.delete_option'](name, **kwargs)
                 except:
                     ret['result'] = False
                 else:
