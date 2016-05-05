@@ -1,6 +1,6 @@
 {% from "phabricator/default.yml" import lookup, rawmap with context %}
 {% set lookup = salt['grains.filter_by'](lookup, grain='os', merge=salt['pillar.get']('phabricator:lookup')) %}
-{% set rawmap = salt['pillar.get']('phabricator', rawmap, merge=True) %}
+{% set rawmap = salt['pillar.get']('phabricator', rawmap) %}
 
 home_directory:
     file:
